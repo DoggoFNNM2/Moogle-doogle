@@ -1,0 +1,167 @@
+/* 🌸 Sakura-Mochi Aesthetic — Soft Pink + White + Pastel Japan Vibes 🌸 */
+/* English words but with Japanese-flavored naming style */
+
+mochibody, body {
+  font-family: "Zen Maru Gothic", "Noto Sans JP", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  margin: 0;
+  background: linear-gradient(180deg, #fff7fb, #ffeaf4 40%, #ffd7e8);
+  color: #5a4a56;
+  letter-spacing: 0.4px;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 18px;
+  border: 2px solid rgba(255, 182, 193, 0.4);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 0 25px rgba(255, 170, 190, 0.35);
+}
+
+h1, h2, h3 {
+  margin: 14px 0;
+  font-family: "Zen Kurenaido", sans-serif;
+  color: #ff7da8;
+  text-shadow: 0 0 10px rgba(255, 142, 186, 0.35);
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.panel {
+  border: 1px solid rgba(255, 155, 180, 0.35);
+  border-radius: 14px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.panel:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 16px rgba(255, 150, 185, 0.45);
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+  font-family: "Noto Sans JP";
+  color: #b06b8b;
+}
+
+input {
+  width: 100%;
+  margin-top: 6px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 165, 185, 0.4);
+  background: #fff2f8;
+  color: #5a4a56;
+  font-family: "Zen Maru Gothic";
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus {
+  border-color: #ff8fba;
+  box-shadow: 0 0 10px rgba(255, 140, 190, 0.4);
+  outline: none;
+}
+
+button {
+  background: linear-gradient(135deg, #ffb7d5, #ff8fba);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  font-family: "Zen Maru Gothic";
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 16px rgba(255, 145, 185, 0.5);
+}
+
+.hidden { display: none; }
+
+#game-area {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+#question-text {
+  font-size: 22px;
+  margin-bottom: 10px;
+  font-family: "Zen Maru Gothic";
+  color: #ff7da8;
+  text-shadow: 0 0 8px rgba(255, 150, 185, 0.4);
+}
+
+#answer-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.answer-btn {
+  background: linear-gradient(135deg, #ffd1e5, #ffb4d6);
+  color: #5a4a56;
+  border-radius: 12px;
+  padding: 12px;
+  font-family: "Zen Kurenaido";
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.answer-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 14px rgba(255, 170, 190, 0.45);
+}
+
+.chests {
+  display: flex;
+  gap: 14px;
+}
+
+.chest {
+  background: linear-gradient(135deg, #ffe3ef, #ffcce0);
+  color: #5a4a56;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-family: "Zen Maru Gothic";
+  box-shadow: 0 0 12px rgba(255, 180, 200, 0.4);
+}
+
+#leaderboard ul {
+  list-style: none;
+  padding: 0;
+}
+
+#leaderboard li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 155, 180, 0.35);
+  padding: 10px 0;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ffb4d6;
+}

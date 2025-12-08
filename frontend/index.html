@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Moogle Doogle!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🍡 Moogle Doogle!</h1>
+
+    <div class="panels">
+      <div class="panel">
+        <h2>Host game (teacher)</h2>
+        <label>Join code</label>
+        <input id="host-code" type="text" placeholder="MOOGLE123" />
+        <label>Google Sheet CSV URL</label>
+        <input id="csv-url" type="text" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" />
+        <button id="host-btn">Host game</button>
+        <div id="host-status"></div>
+        <div id="host-controls" class="hidden">
+          <button id="start-question">Start next question</button>
+          <button id="next-phase">Ready for next</button>
+          <div id="host-room"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Join game (student)</h2>
+        <label>Join code</label>
+        <input id="join-code" type="text" />
+        <label>Name</label>
+        <input id="player-name" type="text" />
+        <label>Avatar image URL</label>
+        <input id="player-avatar" type="text" placeholder="https://example.com/avatar.png" />
+        <button id="join-btn">Join</button>
+        <div id="join-status"></div>
+      </div>
+    </div>
+
+    <hr />
+
+    <div id="game-area">
+      <div id="question-area" class="hidden">
+        <div id="question-text"></div>
+        <div id="answer-options"></div>
+      </div>
+
+      <div id="chest-area" class="hidden">
+        <h3>Choose a chest</h3>
+        <div class="chests">
+          <button class="chest" data-index="0">Chest 1 🎁</button>
+          <button class="chest" data-index="1">Chest 2 🎁</button>
+          <button class="chest" data-index="2">Chest 3 🎁</button>
+        </div>
+        <div id="chest-result"></div>
+      </div>
+
+      <div id="leaderboard">
+        <h3>Leaderboard</h3>
+        <ul id="lb-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/client.js"></script>
+</body>
+</html>
