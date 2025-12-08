@@ -33,24 +33,29 @@ let you = null;
 hostBtn.addEventListener('click', async () => {
   const code = (hostCodeEl.value || '').trim().toUpperCase();
   const csvUrl = (csvUrlEl.value || '').trim();
+
   if (!code || !csvUrl) {
     hostStatus.textContent = 'Please enter a join code and CSV URL.';
     return;
   }
+
   hostStatus.textContent = 'Creating game...';
+
   try {
     const res = await fetch('/api/create-game', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, csvUrl })
     });
+
     const data = await res.json();
+
     if (res.ok) {
       currentCode = data.joinCode;
-      hostStatus.textContent = `Game created with code ${data.joinCode} (${data.questionCount} questions)`;
+      hostStatus.textContent = `Game created with code ${currentCode}`;
       socket.emit('host:bind', { code: currentCode });
     } else {
-      hostStatus.textContent = `Error: ${data.error}`;
+      hostStatus.textContent = `Error: ${data.error || 'Failed to create game'}`;
     }
   } catch (e) {
     hostStatus.textContent = `Error: ${e.message}`;
@@ -61,7 +66,7 @@ hostBtn.addEventListener('click', async () => {
 socket.on('host:ok', ({ code, players, totalQuestions }) => {
   hostControls.classList.remove('hidden');
   renderLeaderboard(players);
-  hostRoom.textContent = `Room ${code} • ${players.length} players • ${totalQuestions} questions`;
+  hostRoom.textContent = `Room: ${code} • Questions: ${totalQuestions}`;
 });
 
 // Host controls
@@ -80,17 +85,19 @@ joinBtn.addEventListener('click', () => {
   const code = (joinCodeEl.value || '').trim().toUpperCase();
   const name = (playerNameEl.value || '').trim();
   const avatar = (playerAvatarEl.value || '').trim();
+
   if (!code) {
     joinStatus.textContent = 'Please enter a join code.';
     return;
   }
+
   currentCode = code;
   socket.emit('player:join', { code, name, avatar });
 });
 
 socket.on('player:ok', ({ code, you: self }) => {
   you = self;
-  joinStatus.textContent = `Joined ${code} as ${self.name}`;
+  joinStatus.textContent = `Joined game ${code} as ${you.name}`;
 });
 
 socket.on('player:error', ({ error }) => {
@@ -132,10 +139,8 @@ function renderAnswerOptions(options) {
 socket.on('answer:result', ({ correct }) => {
   if (correct) {
     questionText.textContent += ' • Correct! 🎉';
-    // Chest phase will be triggered by server
   } else {
     questionText.textContent += ' • ❌ WRONG!';
-    // Wait 1 second then auto-advance to next question
     setTimeout(() => {
       socket.emit('host:start-question', { code: currentCode });
     }, 1000);
@@ -163,10 +168,9 @@ socket.on('chest:result', ({ playerId, outcome, players }) => {
   chestResult.textContent = text;
   renderLeaderboard(players);
 
-  // After 0.5s, auto-advance to next question
   setTimeout(() => {
     socket.emit('host:start-question', { code: currentCode });
-  }, 5000);
+  }, 1000);
 });
 
 // Game finished
@@ -187,7 +191,7 @@ function renderLeaderboard(players) {
     img.src = p.avatar || '';
     img.alt = p.name;
     const name = document.createElement('span');
-    name.textContent = `${p.name} — 🍡 ${p.mochi}`;
+    name.textContent = `${p.name} • ${p.mochi} 🍡`;
     li.appendChild(img);
     li.appendChild(name);
     lbList.appendChild(li);
@@ -196,12 +200,19 @@ function renderLeaderboard(players) {
 
 function describeOutcome(actor, outcome) {
   switch (outcome.type) {
-    case 'PLUS_RANDOM': return `${actor} opened a chest: +${outcome.amount} 🍡!`;
-    case 'NOTHING': return `${actor} opened a chest: nothing 🐲`;
-    case 'SWAP': return outcome.targetId ? `${actor} swapped mochi with another player!` : `${actor} tried to swap, but no target available.`;
-    case 'STEAL_25': return outcome.targetId ? `${actor} stole ${outcome.amount} 🍡 (25%) from someone!` : `${actor} tried to steal, but no target available.`;
-    case 'LOSE_ALL': return `${actor} lost all mochi! 🍞`;
-    case 'GIFT_100': return outcome.targetId ? `${actor} gifted 100 🍡 to someone!` : `${actor} tried to gift, but no target available.`;
-    default: return `${actor} opened a chest.`;
+    case 'PLUS_RANDOM':
+      return `${actor} gained a random amount of mochi!`;
+    case 'NOTHING':
+      return `${actor} found nothing...`;
+    case 'SWAP':
+      return outcome.targetId ? `${actor} swapped mochis with another player!` : `${actor} tried to swap but failed.`;
+    case 'STEAL_25':
+      return outcome.targetId ? `${actor} stole 25 mochi from another player!` : `${actor} tried to steal but failed.`;
+    case 'LOSE_ALL':
+      return `${actor} lost all their mochi 😱`;
+    case 'GIFT_100':
+      return outcome.targetId ? `${actor} gifted 100 mochi to another player!` : `${actor} tried to gift but failed.`;
+    default:
+      return `${actor} had an unknown outcome.`;
   }
 }
