@@ -91,47 +91,55 @@ module.exports = function gamesRouter(io) {
     });
 
     // Player answers
-    socket.on('player:answer', ({ code, answerIndex }) => {
-      const game = getGame(code?.toUpperCase());
-      if (!game || game.phase !== 'question') return;
+socket.on('player:answer', ({ code, answerIndex }) => {
+  const game = getGame(code?.toUpperCase());
+  if (!game || game.phase !== 'question') return;
 
-      const player = game.players.get(socket.id);
-      if (!player) return;
+  const player = game.players.get(socket.id);
+  if (!player) return;
 
-      const q = game.questions[game.currentQuestionIndex];
-      const correct = Number(answerIndex) === q.answerIndex;
-      socket.emit('answer:result', { correct });
+  const q = game.questions[game.currentQuestionIndex];
+  const correct = Number(answerIndex) === q.answerIndex;
 
-      if (correct) {
-        socket.emit('chest:open', { choices: [0, 1, 2] });
-      } else {
-        setTimeout(() => {
-          if (game.phase !== 'finished') serveRandomQuestion(game);
-        }, 1000);
+  socket.emit('answer:result', { correct });
+
+  if (correct) {
+    // Broadcast chest phase to everyone
+    io.to(code).emit('chest:open', { choices: [0, 1, 2] });
+  } else {
+    // Wait 2 seconds, then serve another question if the game isn't finished
+    setTimeout(() => {
+      if (game.phase !== 'finished') {
+        serveRandomQuestion(game);
       }
-    });
+    }, 2000);
+  }
+  
+}); // <-- this closes the player:answer handler
+// Player chooses chest
+socket.on('player:choose-chest', ({ code }) => {
+  const game = getGame(code?.toUpperCase());
+  if (!game || game.phase !== 'question') return;
 
-    // Player chooses chest
-    socket.on('player:choose-chest', ({ code }) => {
-      const game = getGame(code?.toUpperCase());
-      if (!game || game.phase !== 'question') return;
+  const player = game.players.get(socket.id);
+  if (!player) return;
 
-      const player = game.players.get(socket.id);
-      if (!player) return;
+  const outcome = resolveChestOutcome(game, socket.id);
+  applyOutcome(game, socket.id, outcome);
 
-      const outcome = resolveChestOutcome(game, socket.id);
-      applyOutcome(game, socket.id, outcome);
+  io.to(code).emit('chest:result', {
+    playerId: socket.id,
+    outcome,
+    players: listPlayers(game)
+  });
 
-      io.to(code).emit('chest:result', {
-        playerId: socket.id,
-        outcome,
-        players: listPlayers(game)
-      });
-
-      // After chest → next random question unless game ended
-      if (game.phase !== 'finished') serveRandomQuestion(game);
-    });
-
+  // After chest → wait 2 seconds before next random question
+  if (game.phase !== 'finished') {
+    setTimeout(() => {
+      serveRandomQuestion(game);
+    }, 2000);
+  }
+});
     // Host override next
     socket.on('host:next', ({ code }) => {
       const game = getGame(code?.toUpperCase());
