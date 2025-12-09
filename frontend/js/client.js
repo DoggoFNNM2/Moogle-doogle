@@ -124,16 +124,22 @@ socket.on('question:show', ({ index, q, options }) => {
 
 // Player answers
 function renderAnswerOptions(options) {
-  answerOptions.innerHTML = '';
-  options.forEach((opt, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'answer-btn';
-    btn.textContent = opt;
-    btn.addEventListener('click', () => {
-      socket.emit('player:answer', { code: currentCode, answerIndex: i });
+    answerOptions.innerHTML = '';
+    let answered = false; // local flag
+
+    options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.textContent = opt;
+        btn.addEventListener('click', () => {
+            if (answered) return; // prevent spamming
+            answered = true;
+            socket.emit('player:answer', { code: currentCode, answerIndex: i });
+            // optionally disable all buttons
+            document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
+        });
+        answerOptions.appendChild(btn);
     });
-    answerOptions.appendChild(btn);
-  });
 }
 
 socket.on('answer:result', ({ correct }) => {
@@ -143,7 +149,7 @@ socket.on('answer:result', ({ correct }) => {
     questionText.textContent += ' • ❌ WRONG!';
     setTimeout(() => {
       socket.emit('host:start-question', { code: currentCode });
-    }, 1000);
+    }, 3000);
   }
 });
 
@@ -165,12 +171,24 @@ socket.on('chest:result', ({ playerId, outcome, players }) => {
   const who = players.find(p => p.socketId === playerId);
   const actor = who ? who.name : 'Someone';
   const text = describeOutcome(actor, outcome);
+
+  // Show the general result for everyone
   chestResult.textContent = text;
+
+  // If this result was for *you*, show a personal message too
+  if (you && playerId === you.socketId) {
+    const personalText = describeOutcome('You', outcome);
+    // You can either append it or show in a separate element
+    chestResult.textContent += `\n${personalText}`;
+    // Or, if you want a dedicated element:
+    // document.getElementById('your-chest-result').textContent = personalText;
+  }
+
   renderLeaderboard(players);
 
   setTimeout(() => {
     socket.emit('host:start-question', { code: currentCode });
-  }, 1000);
+  }, 2000);
 });
 
 // Game finished
@@ -201,17 +219,17 @@ function renderLeaderboard(players) {
 function describeOutcome(actor, outcome) {
   switch (outcome.type) {
     case 'PLUS_RANDOM':
-      return `${actor} gained a random amount of mochi!`;
+      return `${actor} gained a random amount of mochi!🍡`;
     case 'NOTHING':
       return `${actor} found nothing...`;
     case 'SWAP':
-      return outcome.targetId ? `${actor} swapped mochis with another player!` : `${actor} tried to swap but failed.`;
+      return outcome.targetId ? `${actor} swapped mochis with another player🥝!` : `${actor} tried to swap but failed.`;
     case 'STEAL_25':
-      return outcome.targetId ? `${actor} stole 25 mochi from another player!` : `${actor} tried to steal but failed.`;
+      return outcome.targetId ? `${actor} stole 25 mochi from another player!🍔` : `${actor} tried to steal but failed.`;
     case 'LOSE_ALL':
       return `${actor} lost all their mochi 😱`;
     case 'GIFT_100':
-      return outcome.targetId ? `${actor} gifted 100 mochi to another player!` : `${actor} tried to gift but failed.`;
+      return outcome.targetId ? `${actor} gifted 100 mochi to another player!🎁` : `${actor} tried to gift but failed.`;
     default:
       return `${actor} had an unknown outcome.`;
   }
