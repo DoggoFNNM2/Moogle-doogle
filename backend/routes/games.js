@@ -183,6 +183,22 @@ socket.on('host:next', ({ code }) => {
   }
 });
 
+// Host sets a player's coins
+socket.on('host:set-coins', ({ code, playerId, amount }) => {
+  const game = getGame(code?.toUpperCase());
+  if (!game || game.hostSocketId !== socket.id) return; // only host can do this
+  const player = game.players.get(playerId);
+  if (!player) return;
+
+  const prevMochi = player.mochi;
+  player.mochi = Math.max(0, Number(amount) || 0); // ensure non-negative integer
+
+  // Broadcast updated leaderboard to all players
+  io.to(code).emit('room:update', { players: listPlayers(game) });
+
+  // Optional: Notify host of success
+  socket.emit('host:set-coins:ok', { playerId, prevMochi, newMochi: player.mochi });
+});
 
 
 
