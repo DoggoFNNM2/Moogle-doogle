@@ -108,6 +108,10 @@ socket.on('host:error', ({ error }) => {
   hostStatus.textContent = `Error: ${error}`;
 });
 
+socket.on('punish:bus-shelter', () => {
+  window.location.href = "/bus.html";
+});
+
 // Room updates
 socket.on('room:update', ({ players }) => {
   renderLeaderboard(players);
@@ -234,3 +238,11 @@ function describeOutcome(actor, outcome) {
       return `${actor} had an unknown outcome.`;
   }
 }
+
+//------------------------------------------------------
+// Bus Shelter punishment redirect
+//------------------------------------------------------
+socket.on('punish:bus-shelter', () => {
+  console.log("Received bus shelter punishment, redirecting...");
+  window.location.href = "/bus.html";
+});
