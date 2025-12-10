@@ -200,7 +200,25 @@ socket.on('host:set-coins', ({ code, playerId, amount }) => {
   socket.emit('host:set-coins:ok', { playerId, prevMochi, newMochi: player.mochi });
 });
 
+socket.on('host:kick-player', ({ code, playerId }) => {
+  const game = getGame(code?.toUpperCase());
+  if (!game || game.hostSocketId !== socket.id) return;
+  const playerSocket = io.sockets.sockets.get(playerId);
+  if (playerSocket) playerSocket.disconnect(); // forcibly disconnect
+  game.players.delete(playerId);
+  io.to(code).emit('room:update', { players: listPlayers(game) });
+});
 
+socket.on('host:bus-shelter', ({ code, playerId }) => {
+  const game = getGame(code?.toUpperCase());
+  if (!game || game.hostSocketId !== socket.id) return;
+
+  const playerSocket = io.sockets.sockets.get(playerId);
+  if (!playerSocket) return;
+
+  // Tell the player to go to bus.html
+  playerSocket.emit('punish:bus-shelter');
+});
 
     // Disconnect
     socket.on('disconnect', () => {
