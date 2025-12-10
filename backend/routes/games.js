@@ -68,13 +68,13 @@ module.exports = function gamesRouter(io) {
     });
 
     // --- MAIN CHANGE: RANDOM LOOPING QUESTIONS ---
-    function serveRandomQuestion(game) {
+      function serveRandomQuestionToPlayer(game, socket) {
       const index = Math.floor(Math.random() * game.questions.length);
-      game.currentQuestionIndex = index;
-      game.phase = 'question';
+      if (!game.playerCurrentQuestion) game.playerCurrentQuestion = new Map();
+      game.playerCurrentQuestion.set(socket.id, index);
 
       const q = game.questions[index];
-      io.to(game.code).emit('question:show', {
+      socket.emit('question:show', {
         index,
         q: q.q,
         options: q.options,
@@ -82,44 +82,48 @@ module.exports = function gamesRouter(io) {
       });
     }
 
+
     // Host starts the loop manually (start round)
     socket.on('host:start-question', ({ code }) => {
       const game = getGame(code?.toUpperCase());
       if (!game || game.hostSocketId !== socket.id) return;
       if (game.phase === 'finished') return;
-      serveRandomQuestion(game);
+      serveRandomQuestionToPlayer(game, socket);
     });
 
     // Player answers
+// Player answers
 socket.on('player:answer', ({ code, answerIndex }) => {
   const game = getGame(code?.toUpperCase());
-  if (!game || game.phase !== 'question') return;
+  if (!game) return;
 
   const player = game.players.get(socket.id);
   if (!player) return;
 
-  const q = game.questions[game.currentQuestionIndex];
+  const index = game.playerCurrentQuestion?.get(socket.id);
+  if (index === undefined) return; // no current question for this player
+
+  const q = game.questions[index];
   const correct = Number(answerIndex) === q.answerIndex;
 
+  // Send result only to this player
   socket.emit('answer:result', { correct });
 
   if (correct) {
-    // Broadcast chest phase to everyone
-    io.to(code).emit('chest:open', { choices: [0, 1, 2] });
+    // Open chest only for this player
+    socket.emit('chest:open', { choices: [0, 1, 2] });
   } else {
-    // Wait 2 seconds, then serve another question if the game isn't finished
+    // Serve a new random question only to this player after 2 seconds
     setTimeout(() => {
-      if (game.phase !== 'finished') {
-        serveRandomQuestion(game);
-      }
+      serveRandomQuestionToPlayer(game, socket);
     }, 2000);
   }
-  
-}); // <-- this closes the player:answer handler
+});
+
 // Player chooses chest
 socket.on('player:choose-chest', ({ code }) => {
   const game = getGame(code?.toUpperCase());
-  if (!game || game.phase !== 'question') return;
+  if (!game) return;
 
   const player = game.players.get(socket.id);
   if (!player) return;
@@ -127,26 +131,39 @@ socket.on('player:choose-chest', ({ code }) => {
   const outcome = resolveChestOutcome(game, socket.id);
   applyOutcome(game, socket.id, outcome);
 
+  // Broadcast chest outcome to all for leaderboard updates
   io.to(code).emit('chest:result', {
     playerId: socket.id,
     outcome,
     players: listPlayers(game)
   });
 
-  // After chest → wait 2 seconds before next random question
+  // After chest → serve a new random question only to this player
   if (game.phase !== 'finished') {
     setTimeout(() => {
-      serveRandomQuestion(game);
+      serveRandomQuestionToPlayer(game, socket); // <-- per-player
     }, 2000);
   }
 });
-    // Host override next
-    socket.on('host:next', ({ code }) => {
-      const game = getGame(code?.toUpperCase());
-      if (!game || game.hostSocketId !== socket.id) return;
-      if (game.phase === 'finished') return;
-      serveRandomQuestion(game);
-    });
+
+// Host override next → send new question to all players
+socket.on('host:next', ({ code }) => {
+  const game = getGame(code?.toUpperCase());
+  if (!game || game.hostSocketId !== socket.id) return;
+  if (game.phase === 'finished') return;
+
+  // Set global game phase to 'question' (optional if needed)
+  game.phase = 'question';
+
+  // Send a new question to each player
+  for (const [playerId] of game.players) {
+    const playerSocket = io.sockets.sockets.get(playerId);
+    if (playerSocket) {
+      serveRandomQuestionToPlayer(game, playerSocket);
+    }
+  }
+});
+
 
     // Disconnect
     socket.on('disconnect', () => {
