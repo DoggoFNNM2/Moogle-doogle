@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Game Admin Panel</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 50%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    button { padding: 4px 8px; }
+  </style>
+</head>
+<body>
+  <h1>Admin Panel</h1>
+
+  <label>
+    Game Code: 
+    <input type="text" id="gameCode" />
+  </label>
+  <button id="joinGame">Join Game</button>
+
+  <h2>Players</h2>
+  <table id="playersTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Coins</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let currentGameCode = null;
+
+    document.getElementById('joinGame').onclick = () => {
+      const code = document.getElementById('gameCode').value.trim().toUpperCase();
+      if (!code) return alert('Enter game code');
+      currentGameCode = code;
+      socket.emit('host:bind', { code });
+    };
+
+    // Receive current players
+    socket.on('host:ok', ({ players }) => {
+      updatePlayersTable(players);
+    });
+
+    socket.on('room:update', ({ players }) => {
+      updatePlayersTable(players);
+    });
+
+    function updatePlayersTable(players) {
+      const tbody = document.querySelector('#playersTable tbody');
+      tbody.innerHTML = '';
+      players.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.name}</td>
+          <td>${p.mochi}</td>
+          <td><button onclick="editCoins('${p.socketId}', ${p.mochi})">Edit Coins</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function editCoins(playerId, currentMochi) {
+      const newAmount = prompt('Set coins for this player:', currentMochi);
+      if (newAmount === null) return;
+      const amount = parseInt(newAmount);
+      if (isNaN(amount) || amount < 0) return alert('Invalid amount');
+      socket.emit('host:set-coins', { code: currentGameCode, playerId, amount });
+    }
+
+    // Confirm coin edit
+    socket.on('host:set-coins:ok', ({ playerId, newMochi }) => {
+      console.log(`Coins updated for ${playerId}: ${newMochi}`);
+    });
+  </script>
+</body>
+</html>
