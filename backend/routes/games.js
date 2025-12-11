@@ -175,13 +175,26 @@ socket.on('host:next', ({ code }) => {
     const playerSocket = io.sockets.sockets.get(playerId);
     if (playerSocket) serveRandomQuestionToPlayer(game, playerSocket);
 
-          // Start 3‑minute auto-end timer
-      game.endAt = Date.now() + 3 * 60 * 1000;
-      game.timer = setTimeout(() => {
-        game.phase = 'finished';
-        io.to(game.code).emit('game:finished', { players: listPlayers(game) });
-      }, 3 * 60 * 1000);
+// Start 3-minute (180s) auto-end timer with live broadcast
+game.endAt = Date.now() + 3 * 60 * 1000;
+
+if (game.timerInterval) clearInterval(game.timerInterval);
+
+game.timerInterval = setInterval(() => {
+  const now = Date.now();
+  const timeLeft = Math.max(0, Math.floor((game.endAt - now) / 1000));
+
+  // Broadcast time left to everyone in the room (players + admin)
+  io.to(game.code).emit("timer:update", { timeLeft });
+
+  if (timeLeft <= 0) {
+    clearInterval(game.timerInterval);
+
+    game.phase = 'finished';
+    io.to(game.code).emit('game:finished', { players: listPlayers(game) });
   }
+}, 1000);
+}
 });
 
 // Host sets a player's coins
@@ -208,6 +221,34 @@ socket.on('host:kick-player', ({ code, playerId }) => {
   if (playerSocket) playerSocket.disconnect(); // forcibly disconnect
   game.players.delete(playerId);
   io.to(code).emit('room:update', { players: listPlayers(game) });
+});
+
+// 🔥 SOUL SWAP FEATURE
+socket.on('host:soul-swap', ({ code, p1, p2 }) => {
+  const game = getGame(code?.toUpperCase());
+  if (!game || game.hostSocketId !== socket.id) return;
+
+  const A = game.players.get(p1);
+  const B = game.players.get(p2);
+  if (!A || !B) return;
+
+  // Swap souls (identity swap)
+  const temp = {
+    name: A.name,
+    avatar: A.avatar,
+    mochi: A.mochi
+  };
+
+  A.name = B.name;
+  A.avatar = B.avatar;
+  A.mochi = B.mochi;
+
+  B.name = temp.name;
+  B.avatar = temp.avatar;
+  B.mochi = temp.mochi;
+
+  io.to(code).emit("room:update", { players: listPlayers(game) });
+  io.to(code).emit("soul:swapped", { p1, p2 });
 });
 
 socket.on('host:bus-shelter', ({ code, playerId }) => {
