@@ -108,6 +108,10 @@ socket.on('host:error', ({ error }) => {
   hostStatus.textContent = `Error: ${error}`;
 });
 
+socket.on('soul:swapped', ({ p1, p2 }) => {
+  console.log(`Souls swapped between ${p1} and ${p2}! 🟠🌀`);
+});
+
 socket.on('punish:bus-shelter', () => {
   window.location.href = "/bus.html";
 });
