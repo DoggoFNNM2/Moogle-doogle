@@ -84,18 +84,33 @@
       background-color: #ff4d4d;
       color: #fff;
     }
+
     .bus-btn {
       background-color: #ff69b4;
       color: white;
       font-weight: bold;
-   }
+    }
     .bus-btn:hover {
       background-color: #ff85c9;
+    }
+
+    /* Soul swap box */
+    .soul-box {
+      margin: 25px 0;
+      padding: 20px;
+      background: #f0faff;
+      border-radius: 10px;
+      width: 350px;
     }
   </style>
 </head>
 <body>
   <h1>🎮 Admin Panel</h1>
+<h2>Timer</h2>
+<div id="adminTimer" 
+     style="font-size: 32px; font-weight: bold; color: #ff5500; margin-bottom: 20px;">
+  Waiting...
+</div>
 
   <div>
     <label>Game Code:</label>
@@ -115,6 +130,22 @@
     <tbody></tbody>
   </table>
 
+  <!-- SOUL SWAP UI -->
+  <div class="soul-box">
+    <h2>🟠 Soul Swap</h2>
+
+    <label><strong>Choose Player A:</strong></label><br>
+    <select id="soulA" style="width:100%; padding:6px; margin-bottom:10px;"></select>
+
+    <label><strong>Choose Player B:</strong></label><br>
+    <select id="soulB" style="width:100%; padding:6px; margin-bottom:10px;"></select>
+
+    <button onclick="swapSouls()"
+      style="margin-top:10px; width:100%; padding:8px; background:#ff8800; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">
+      🟠 Swap Souls
+    </button>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
@@ -127,13 +158,13 @@
       socket.emit('host:bind', { code });
     };
 
-    // Update players table
     socket.on('host:ok', ({ players }) => updatePlayersTable(players));
     socket.on('room:update', ({ players }) => updatePlayersTable(players));
 
     function updatePlayersTable(players) {
       const tbody = document.querySelector('#playersTable tbody');
       tbody.innerHTML = '';
+
       players.forEach(p => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -147,9 +178,27 @@
         `;
         tbody.appendChild(tr);
       });
+
+      // Fill soul swap dropdowns
+      const soulA = document.getElementById("soulA");
+      const soulB = document.getElementById("soulB");
+
+      soulA.innerHTML = "";
+      soulB.innerHTML = "";
+
+      players.forEach(p => {
+        let opt1 = document.createElement("option");
+        opt1.value = p.socketId;
+        opt1.textContent = `${p.name} (${p.mochi}🍡)`;
+        soulA.appendChild(opt1);
+
+        let opt2 = document.createElement("option");
+        opt2.value = p.socketId;
+        opt2.textContent = `${p.name} (${p.mochi}🍡)`;
+        soulB.appendChild(opt2);
+      });
     }
 
-    // Edit coins function
     function editCoins(playerId, currentMochi) {
       const newAmount = prompt('Set coins for this player 🍡:', currentMochi);
       if (newAmount === null) return;
@@ -158,19 +207,39 @@
       socket.emit('host:set-coins', { code: currentGameCode, playerId, amount });
     }
 
-    // Kick player function
     function kickPlayer(playerId) {
       if (!confirm('Are you sure you want to kick this player? 🔨')) return;
       socket.emit('host:kick-player', { code: currentGameCode, playerId });
     }
+
     function busShelter(playerId) {
       if (!confirm("Send this player to Number 16 Bus Shelter? 🚌🔥")) return;
       socket.emit('host:bus-shelter', { code: currentGameCode, playerId });
     }
-    // Confirm coin edit
-    socket.on('host:set-coins:ok', ({ playerId, newMochi }) => {
-      console.log(`Coins updated for ${playerId}: ${newMochi}`);
+    socket.on("timer:update", ({ timeLeft }) => {
+      document.getElementById("adminTimer").textContent = `⏳ ${timeLeft}s`;
     });
+
+socket.on("game:finished", () => {
+  document.getElementById("adminTimer").textContent = "🎉 Game Finished!";
+});
+
+    // NEW: Soul swap
+    function swapSouls() {
+      const p1 = document.getElementById("soulA").value;
+      const p2 = document.getElementById("soulB").value;
+
+      if (p1 === p2) return alert("You cannot swap a player with themselves!");
+
+      socket.emit("host:soul-swap", {
+        code: currentGameCode,
+        p1,
+        p2
+      });
+
+      alert("🟠 Souls swapped!");
+    }
   </script>
+
 </body>
 </html>
