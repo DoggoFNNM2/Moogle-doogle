@@ -17,12 +17,6 @@ module.exports = function gamesRouter(io) {
 
       const game = createGame(code.toUpperCase(), null, questions);
 
-      // Start 3‑minute auto-end timer
-      game.endAt = Date.now() + 3 * 60 * 1000;
-      game.timer = setTimeout(() => {
-        game.phase = 'finished';
-        io.to(game.code).emit('game:finished', { players: listPlayers(game) });
-      }, 3 * 60 * 1000);
 
       res.json({ joinCode: game.code, questionCount: questions.length });
     } catch (err) {
@@ -180,6 +174,13 @@ socket.on('host:next', ({ code }) => {
   for (const [playerId] of game.players) {
     const playerSocket = io.sockets.sockets.get(playerId);
     if (playerSocket) serveRandomQuestionToPlayer(game, playerSocket);
+
+          // Start 3‑minute auto-end timer
+      game.endAt = Date.now() + 3 * 60 * 1000;
+      game.timer = setTimeout(() => {
+        game.phase = 'finished';
+        io.to(game.code).emit('game:finished', { players: listPlayers(game) });
+      }, 3 * 60 * 1000);
   }
 });
 
